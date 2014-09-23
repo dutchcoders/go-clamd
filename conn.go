@@ -86,9 +86,7 @@ func (c *CLAMDConn) readResponse() (chan string, sync.WaitGroup, error) {
 
 	// var dataArrays []string
 	go func() {
-		fmt.Println("Start")
 		defer func() {
-			fmt.Println("Cleaning up")
 			close(ch)
 			wg.Done()
 		}()

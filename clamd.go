@@ -28,6 +28,7 @@ package clamd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"io"
 	"strings"
 )
@@ -243,15 +244,15 @@ func (c *Clamd) ScanStream(r io.Reader) (chan string, error) {
 		buf := make([]byte, CHUNK_SIZE)
 
 		nr, err := r.Read(buf)
+		if nr > 0 {
+		log.Printf("Error %v, %v,  %v", buf[0:nr], nr, err)
+			conn.sendChunk(buf[0:nr])
+		}
+
 		if err != nil {
 			break
 		}
 
-		if nr == 0 {
-			break
-		}
-
-		conn.sendChunk(buf[:nr])
 	}
 
 	err = conn.sendEOF()
