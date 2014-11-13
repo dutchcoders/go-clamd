@@ -110,6 +110,15 @@ func (c *CLAMDConn) readResponse() (chan string, sync.WaitGroup, error) {
 	return ch, wg, nil
 }
 
+func newCLAMDTcpConn(address string) (*CLAMDConn, error) {
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CLAMDConn{Conn: conn}, err
+}
+
 func newCLAMDUnixConn(address string) (*CLAMDConn, error) {
 	conn, err := net.Dial("unix", address)
 	if err != nil {

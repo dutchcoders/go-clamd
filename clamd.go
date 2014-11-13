@@ -28,8 +28,9 @@ package clamd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"io"
+	"log"
+	"net/url"
 	"strings"
 )
 
@@ -47,13 +48,28 @@ type Stats struct {
 
 var EICAR = []byte(`X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*`)
 
-func (c *Clamd) newConnection() (*CLAMDConn, error) {
-	conn, err := newCLAMDUnixConn(c.address)
-	return conn, err
+func (c *Clamd) newConnection() (conn *CLAMDConn, err error) {
+
+	var u *url.URL
+
+	if u, err = url.Parse(c.address); err != nil {
+		return
+	}
+
+	switch u.Scheme {
+	case "tcp":
+		conn, err = newCLAMDTcpConn(u.Host)
+	case "unix":
+		conn, err = newCLAMDUnixConn(u.Path)
+	default:
+		conn, err = newCLAMDUnixConn(c.address)
+	}
+
+	return
 }
 
 func (c *Clamd) simpleCommand(command string) (chan string, error) {
-	conn, err := newCLAMDUnixConn(c.address)
+	conn, err := c.newConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +261,7 @@ func (c *Clamd) ScanStream(r io.Reader) (chan string, error) {
 
 		nr, err := r.Read(buf)
 		if nr > 0 {
-		log.Printf("Error %v, %v,  %v", buf[0:nr], nr, err)
+			log.Printf("Error %v, %v,  %v", buf[0:nr], nr, err)
 			conn.sendChunk(buf[0:nr])
 		}
 
