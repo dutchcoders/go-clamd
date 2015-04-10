@@ -32,9 +32,11 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"time"
 )
 
 const CHUNK_SIZE = 1024
+const TCP_TIMEOUT = time.Second * 2
 
 type CLAMDConn struct {
 	net.Conn
@@ -111,8 +113,13 @@ func (c *CLAMDConn) readResponse() (chan string, sync.WaitGroup, error) {
 }
 
 func newCLAMDTcpConn(address string) (*CLAMDConn, error) {
-	conn, err := net.Dial("tcp", address)
+	conn, err := net.DialTimeout("tcp", address, TCP_TIMEOUT)
+
 	if err != nil {
+		if nerr, isOk := err.(net.Error); isOk && nerr.Timeout() {
+			return nil, nerr
+		}
+
 		return nil, err
 	}
 
