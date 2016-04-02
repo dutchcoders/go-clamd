@@ -75,7 +75,7 @@ func (conn *CLAMDConn) sendChunk(data []byte) error {
 	return err
 }
 
-func (c *CLAMDConn) readResponse() (chan string, sync.WaitGroup, error) {
+func (c *CLAMDConn) readResponse() (chan string, *sync.WaitGroup, error) {
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -109,7 +109,7 @@ func (c *CLAMDConn) readResponse() (chan string, sync.WaitGroup, error) {
 		}
 	}()
 
-	return ch, wg, nil
+	return ch, &wg, nil
 }
 
 func newCLAMDTcpConn(address string) (*CLAMDConn, error) {
