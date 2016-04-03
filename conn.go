@@ -118,6 +118,7 @@ func parseResult(line string) *ScanResult {
 
 	matches := resultRegex.FindStringSubmatch(line)
 	if len(matches) == 0 {
+		res.Description = "Regex had no matches"
 		res.Status = RES_PARSE_ERROR
 		return res
 	}
@@ -136,6 +137,16 @@ func parseResult(line string) *ScanResult {
 				res.Size = i
 			}
 		case "status":
+			switch matches[i] {
+			case RES_OK:
+			case RES_FOUND:
+			case RES_ERROR:
+				break
+			default:
+				res.Description = "Invalid status field: " + matches[i]
+				res.Status = RES_PARSE_ERROR
+				return res
+			}
 			res.Status = matches[i]
 		}
 	}
