@@ -30,6 +30,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -37,6 +39,10 @@ import (
 
 const CHUNK_SIZE = 1024
 const TCP_TIMEOUT = time.Second * 2
+
+var resultRegex = regexp.MustCompile(
+	`^(?P<path>[^:]+): ((?P<desc>[^:]+)(\((?P<virhash>([^:]+)):(?P<virsize>\d+)\))? )?(?P<status>FOUND|ERROR|OK)$`,
+)
 
 type CLAMDConn struct {
 	net.Conn
@@ -75,18 +81,13 @@ func (conn *CLAMDConn) sendChunk(data []byte) error {
 	return err
 }
 
-func (c *CLAMDConn) readResponse() (chan string, *sync.WaitGroup, error) {
+func (c *CLAMDConn) readResponse() (chan *ScanResult, *sync.WaitGroup, error) {
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-
-	// read data
 	reader := bufio.NewReader(c)
+	ch := make(chan *ScanResult)
 
-	// reading
-	ch := make(chan string)
-
-	// var dataArrays []string
 	go func() {
 		defer func() {
 			close(ch)
@@ -104,12 +105,42 @@ func (c *CLAMDConn) readResponse() (chan string, *sync.WaitGroup, error) {
 			}
 
 			line = strings.TrimRight(line, " \t\r\n")
-
-			ch <- line
+			ch <- parseResult(line)
 		}
 	}()
 
 	return ch, &wg, nil
+}
+
+func parseResult(line string) *ScanResult {
+	res := &ScanResult{}
+	res.Raw = line
+
+	matches := resultRegex.FindStringSubmatch(line)
+	if len(matches) == 0 {
+		res.Status = RES_PARSE_ERROR
+		return res
+	}
+
+	for i, name := range resultRegex.SubexpNames() {
+		switch name {
+		case "path":
+			res.Path = matches[i]
+		case "desc":
+			res.Description = matches[i]
+		case "virhash":
+			res.Hash = matches[i]
+		case "virsize":
+			i, err := strconv.Atoi(matches[i])
+			if err == nil {
+				res.Size = i
+			}
+		case "status":
+			res.Status = matches[i]
+		}
+	}
+
+	return res
 }
 
 func newCLAMDTcpConn(address string) (*CLAMDConn, error) {
