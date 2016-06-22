@@ -29,9 +29,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/url"
 	"strings"
+)
+
+const (
+	RES_OK          = "OK"
+	RES_FOUND       = "FOUND"
+	RES_ERROR       = "ERROR"
+	RES_PARSE_ERROR = "PARSE ERROR"
 )
 
 type Clamd struct {
@@ -44,6 +50,15 @@ type Stats struct {
 	Threads  string
 	Memstats string
 	Queue    string
+}
+
+type ScanResult struct {
+	Raw         string
+	Description string
+	Path        string
+	Hash        string
+	Size        int
+	Status      string
 }
 
 var EICAR = []byte(`X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*`)
@@ -68,13 +83,11 @@ func (c *Clamd) newConnection() (conn *CLAMDConn, err error) {
 	return
 }
 
-func (c *Clamd) simpleCommand(command string) (chan string, error) {
+func (c *Clamd) simpleCommand(command string) (chan *ScanResult, error) {
 	conn, err := c.newConnection()
 	if err != nil {
 		return nil, err
 	}
-
-	// defer conn.Close()
 
 	err = conn.sendCommand(command)
 	if err != nil {
@@ -84,10 +97,7 @@ func (c *Clamd) simpleCommand(command string) (chan string, error) {
 	ch, wg, err := conn.readResponse()
 
 	go func() {
-		// wait for waitgroup
 		wg.Wait()
-
-		// close connection
 		conn.Close()
 	}()
 
@@ -105,7 +115,7 @@ func (c *Clamd) Ping() error {
 
 	select {
 	case s := (<-ch):
-		switch s {
+		switch s.Raw {
 		case "PONG":
 			return nil
 		default:
@@ -119,7 +129,7 @@ func (c *Clamd) Ping() error {
 /*
 Print program and database versions.
 */
-func (c *Clamd) Version() (chan string, error) {
+func (c *Clamd) Version() (chan *ScanResult, error) {
 	dataArrays, err := c.simpleCommand("VERSION")
 	return dataArrays, err
 }
@@ -138,17 +148,17 @@ func (c *Clamd) Stats() (*Stats, error) {
 	stats := &Stats{}
 
 	for s := range ch {
-		if strings.HasPrefix(s, "POOLS") {
-			stats.Pools = strings.Trim(s[6:], " ")
-		} else if strings.HasPrefix(s, "STATE") {
-			stats.State = s
-		} else if strings.HasPrefix(s, "THREADS") {
-			stats.Threads = s
-		} else if strings.HasPrefix(s, "QUEUE") {
-			stats.Queue = s
-		} else if strings.HasPrefix(s, "MEMSTATS") {
-			stats.Memstats = s
-		} else if strings.HasPrefix(s, "END") {
+		if strings.HasPrefix(s.Raw, "POOLS") {
+			stats.Pools = strings.Trim(s.Raw[6:], " ")
+		} else if strings.HasPrefix(s.Raw, "STATE") {
+			stats.State = s.Raw
+		} else if strings.HasPrefix(s.Raw, "THREADS") {
+			stats.Threads = s.Raw
+		} else if strings.HasPrefix(s.Raw, "QUEUE") {
+			stats.Queue = s.Raw
+		} else if strings.HasPrefix(s.Raw, "MEMSTATS") {
+			stats.Memstats = s.Raw
+		} else if strings.HasPrefix(s.Raw, "END") {
 		} else {
 			//	return nil, errors.New(fmt.Sprintf("Unknown response, got %s.", s))
 		}
@@ -168,7 +178,7 @@ func (c *Clamd) Reload() error {
 
 	select {
 	case s := (<-ch):
-		switch s {
+		switch s.Raw {
 		case "RELOADING":
 			return nil
 		default:
@@ -192,7 +202,7 @@ func (c *Clamd) Shutdown() error {
 Scan file or directory (recursively) with archive support enabled (a full path is
 required).
 */
-func (c *Clamd) ScanFile(path string) (chan string, error) {
+func (c *Clamd) ScanFile(path string) (chan *ScanResult, error) {
 	command := fmt.Sprintf("SCAN %s", path)
 	ch, err := c.simpleCommand(command)
 	return ch, err
@@ -202,7 +212,7 @@ func (c *Clamd) ScanFile(path string) (chan string, error) {
 Scan file or directory (recursively) with archive and special file support disabled
 (a full path is required).
 */
-func (c *Clamd) RawScanFile(path string) (chan string, error) {
+func (c *Clamd) RawScanFile(path string) (chan *ScanResult, error) {
 	command := fmt.Sprintf("RAWSCAN %s", path)
 	ch, err := c.simpleCommand(command)
 	return ch, err
@@ -212,7 +222,7 @@ func (c *Clamd) RawScanFile(path string) (chan string, error) {
 Scan file in a standard way or scan directory (recursively) using multiple threads
 (to make the scanning faster on SMP machines).
 */
-func (c *Clamd) MultiScanFile(path string) (chan string, error) {
+func (c *Clamd) MultiScanFile(path string) (chan *ScanResult, error) {
 	command := fmt.Sprintf("MULTISCAN %s", path)
 	ch, err := c.simpleCommand(command)
 	return ch, err
@@ -222,7 +232,7 @@ func (c *Clamd) MultiScanFile(path string) (chan string, error) {
 Scan file or directory (recursively) with archive support enabled and don’t stop
 the scanning when a virus is found.
 */
-func (c *Clamd) ContScanFile(path string) (chan string, error) {
+func (c *Clamd) ContScanFile(path string) (chan *ScanResult, error) {
 	command := fmt.Sprintf("CONTSCAN %s", path)
 	ch, err := c.simpleCommand(command)
 	return ch, err
@@ -232,7 +242,7 @@ func (c *Clamd) ContScanFile(path string) (chan string, error) {
 Scan file or directory (recursively) with archive support enabled and don’t stop
 the scanning when a virus is found.
 */
-func (c *Clamd) AllMatchScanFile(path string) (chan string, error) {
+func (c *Clamd) AllMatchScanFile(path string) (chan *ScanResult, error) {
 	command := fmt.Sprintf("ALLMATCHSCAN %s", path)
 	ch, err := c.simpleCommand(command)
 	return ch, err
@@ -248,11 +258,21 @@ the actual chunk. Streaming is terminated by sending a zero-length chunk. Note:
 do not exceed StreamMaxLength as defined in clamd.conf, otherwise clamd will
 reply with INSTREAM size limit exceeded and close the connection
 */
-func (c *Clamd) ScanStream(r io.Reader) (chan string, error) {
+func (c *Clamd) ScanStream(r io.Reader, abort chan bool) (chan *ScanResult, error) {
 	conn, err := c.newConnection()
 	if err != nil {
 		return nil, err
 	}
+
+	go func() {
+		for {
+			_, allowRunning := <-abort
+			if !allowRunning {
+				break
+			}
+		}
+		conn.Close()
+	}()
 
 	conn.sendCommand("INSTREAM")
 
@@ -261,7 +281,6 @@ func (c *Clamd) ScanStream(r io.Reader) (chan string, error) {
 
 		nr, err := r.Read(buf)
 		if nr > 0 {
-			log.Printf("Error %v, %v,  %v", buf[0:nr], nr, err)
 			conn.sendChunk(buf[0:nr])
 		}
 
