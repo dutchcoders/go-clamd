@@ -12,7 +12,7 @@ Interface to clamd (clamav daemon). You can use go-clamd to implement virus dete
 c := clamd.NewClamd("/tmp/clamd.socket")
 
 reader := bytes.NewReader(clamd.EICAR)
-response, err := c.ScanStream(reader)
+response, err := c.ScanStream(reader, make(chan bool))
 
 for s := range response {
     fmt.Printf("%v %v\n", s, err)
