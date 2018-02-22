@@ -119,7 +119,7 @@ func (c *Clamd) Ping() error {
 		case "PONG":
 			return nil
 		default:
-			return errors.New(fmt.Sprintf("Invalid response, got %s.", s))
+			return errors.New(fmt.Sprintf("Invalid response, got %s.", s.Raw))
 		}
 	}
 
@@ -129,9 +129,9 @@ func (c *Clamd) Ping() error {
 /*
 Print program and database versions.
 */
-func (c *Clamd) Version() (chan *ScanResult, error) {
-	dataArrays, err := c.simpleCommand("VERSION")
-	return dataArrays, err
+func (c *Clamd) Version() (*ScanResult, error) {
+	ch, err := c.simpleCommand("VERSION")
+	return <-ch, err
 }
 
 /*
@@ -182,7 +182,7 @@ func (c *Clamd) Reload() error {
 		case "RELOADING":
 			return nil
 		default:
-			return errors.New(fmt.Sprintf("Invalid response, got %s.", s))
+			return errors.New(fmt.Sprintf("Invalid response, got %s.", s.Raw))
 		}
 	}
 
@@ -202,50 +202,40 @@ func (c *Clamd) Shutdown() error {
 Scan file or directory (recursively) with archive support enabled (a full path is
 required).
 */
-func (c *Clamd) ScanFile(path string) (chan *ScanResult, error) {
+func (c *Clamd) ScanFile(path string) (*ScanResult, error) {
 	command := fmt.Sprintf("SCAN %s", path)
 	ch, err := c.simpleCommand(command)
-	return ch, err
-}
-
-/*
-Scan file or directory (recursively) with archive and special file support disabled
-(a full path is required).
-*/
-func (c *Clamd) RawScanFile(path string) (chan *ScanResult, error) {
-	command := fmt.Sprintf("RAWSCAN %s", path)
-	ch, err := c.simpleCommand(command)
-	return ch, err
+	return <-ch, err
 }
 
 /*
 Scan file in a standard way or scan directory (recursively) using multiple threads
 (to make the scanning faster on SMP machines).
 */
-func (c *Clamd) MultiScanFile(path string) (chan *ScanResult, error) {
+func (c *Clamd) MultiScanFile(path string) (*ScanResult, error) {
 	command := fmt.Sprintf("MULTISCAN %s", path)
 	ch, err := c.simpleCommand(command)
-	return ch, err
+	return <-ch, err
 }
 
 /*
 Scan file or directory (recursively) with archive support enabled and don’t stop
 the scanning when a virus is found.
 */
-func (c *Clamd) ContScanFile(path string) (chan *ScanResult, error) {
+func (c *Clamd) ContScanFile(path string) (*ScanResult, error) {
 	command := fmt.Sprintf("CONTSCAN %s", path)
 	ch, err := c.simpleCommand(command)
-	return ch, err
+	return <-ch, err
 }
 
 /*
 Scan file or directory (recursively) with archive support enabled and don’t stop
 the scanning when a virus is found.
 */
-func (c *Clamd) AllMatchScanFile(path string) (chan *ScanResult, error) {
+func (c *Clamd) AllMatchScanFile(path string) (*ScanResult, error) {
 	command := fmt.Sprintf("ALLMATCHSCAN %s", path)
 	ch, err := c.simpleCommand(command)
-	return ch, err
+	return <-ch, err
 }
 
 /*
