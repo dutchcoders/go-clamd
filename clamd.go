@@ -119,7 +119,7 @@ func (c *Clamd) Ping() error {
 		case "PONG":
 			return nil
 		default:
-			return errors.New(fmt.Sprintf("Invalid response, got %s.", s))
+			return errors.New(fmt.Sprintf("Invalid response, got %s.", s.Raw))
 		}
 	}
 
@@ -182,7 +182,7 @@ func (c *Clamd) Reload() error {
 		case "RELOADING":
 			return nil
 		default:
-			return errors.New(fmt.Sprintf("Invalid response, got %s.", s))
+			return errors.New(fmt.Sprintf("Invalid response, got %s.", s.Raw))
 		}
 	}
 
