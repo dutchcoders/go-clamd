@@ -37,7 +37,6 @@ import (
 	"time"
 )
 
-const CHUNK_SIZE = 1024
 const TCP_TIMEOUT = time.Second * 2
 
 var resultRegex = regexp.MustCompile(
@@ -81,11 +80,11 @@ func (conn *CLAMDConn) sendChunk(data []byte) error {
 	return err
 }
 
-func (c *CLAMDConn) readResponse() (chan *ScanResult, *sync.WaitGroup, error) {
+func (conn *CLAMDConn) readResponse() (chan *ScanResult, *sync.WaitGroup, error) {
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-	reader := bufio.NewReader(c)
+	reader := bufio.NewReader(conn)
 	ch := make(chan *ScanResult)
 
 	go func() {
