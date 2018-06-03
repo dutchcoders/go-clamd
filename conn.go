@@ -37,7 +37,6 @@ import (
 	"time"
 )
 
-const CHUNK_SIZE = 1024
 const TCP_TIMEOUT = time.Second * 2
 
 var resultRegex = regexp.MustCompile(

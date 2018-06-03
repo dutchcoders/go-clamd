@@ -38,6 +38,7 @@ const (
 	RES_FOUND       = "FOUND"
 	RES_ERROR       = "ERROR"
 	RES_PARSE_ERROR = "PARSE ERROR"
+	CHUNK_SIZE      = 1024
 )
 
 type Clamd struct {
