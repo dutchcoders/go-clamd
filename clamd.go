@@ -297,6 +297,5 @@ func (c *Clamd) ScanStream(r io.Reader, abort chan bool) (chan *ScanResult, erro
 }
 
 func NewClamd(address string) *Clamd {
-	clamd := &Clamd{address: address}
-	return clamd
+	return &Clamd{address: address}
 }
