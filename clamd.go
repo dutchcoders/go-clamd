@@ -191,13 +191,12 @@ func (c *Clamd) Reload() error {
 	}
 }
 
-func (c *Clamd) Shutdown() error {
-	_, err := c.simpleCommand("SHUTDOWN")
-	if err != nil {
-		return err
-	}
-
-	return err
+/*
+Sends the SHUTDOWN command to the ClamdAV instance
+*/
+func (c *Clamd) Shutdown() (err error) {
+	_, err = c.simpleCommand("SHUTDOWN")
+	return
 }
 
 /*
