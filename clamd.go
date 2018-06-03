@@ -105,6 +105,11 @@ func (c *Clamd) simpleCommand(command string) (chan *ScanResult, error) {
 	return ch, err
 }
 
+func (c *Clamd) simpleCommandWithPath(commandName string, path string) (chan *ScanResult, error) {
+	command := fmt.Sprintf("%s %s", commandName, path)
+	return c.simpleCommand(command)
+}
+
 /*
 Check the daemon's state (should reply with PONG).
 */
@@ -200,9 +205,7 @@ Scan file or directory (recursively) with archive support enabled (a full path i
 required).
 */
 func (c *Clamd) ScanFile(path string) (chan *ScanResult, error) {
-	command := fmt.Sprintf("SCAN %s", path)
-	ch, err := c.simpleCommand(command)
-	return ch, err
+	return c.simpleCommandWithPath("Scan", path)
 }
 
 /*
@@ -210,9 +213,7 @@ Scan file or directory (recursively) with archive and special file support disab
 (a full path is required).
 */
 func (c *Clamd) RawScanFile(path string) (chan *ScanResult, error) {
-	command := fmt.Sprintf("RAWSCAN %s", path)
-	ch, err := c.simpleCommand(command)
-	return ch, err
+	return c.simpleCommandWithPath("RAWSCAN", path)
 }
 
 /*
@@ -220,9 +221,7 @@ Scan file in a standard way or scan directory (recursively) using multiple threa
 (to make the scanning faster on SMP machines).
 */
 func (c *Clamd) MultiScanFile(path string) (chan *ScanResult, error) {
-	command := fmt.Sprintf("MULTISCAN %s", path)
-	ch, err := c.simpleCommand(command)
-	return ch, err
+	return c.simpleCommandWithPath("MULTISCAN", path)
 }
 
 /*
@@ -230,9 +229,7 @@ Scan file or directory (recursively) with archive support enabled and don’t st
 the scanning when a virus is found.
 */
 func (c *Clamd) ContScanFile(path string) (chan *ScanResult, error) {
-	command := fmt.Sprintf("CONTSCAN %s", path)
-	ch, err := c.simpleCommand(command)
-	return ch, err
+	return c.simpleCommandWithPath("CONTSCAN", path)
 }
 
 /*
@@ -240,9 +237,7 @@ Scan file or directory (recursively) with archive support enabled and don’t st
 the scanning when a virus is found.
 */
 func (c *Clamd) AllMatchScanFile(path string) (chan *ScanResult, error) {
-	command := fmt.Sprintf("ALLMATCHSCAN %s", path)
-	ch, err := c.simpleCommand(command)
-	return ch, err
+	return c.simpleCommandWithPath("ALLMATCHSCAN", path)
 }
 
 /*
