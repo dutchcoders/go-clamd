@@ -123,8 +123,6 @@ func (c *Clamd) Ping() error {
 			return errors.New(fmt.Sprintf("Invalid response, got %s.", s))
 		}
 	}
-
-	return nil
 }
 
 /*
@@ -186,8 +184,6 @@ func (c *Clamd) Reload() error {
 			return errors.New(fmt.Sprintf("Invalid response, got %s.", s))
 		}
 	}
-
-	return nil
 }
 
 func (c *Clamd) Shutdown() error {
