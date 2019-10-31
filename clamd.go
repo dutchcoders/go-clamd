@@ -319,7 +319,7 @@ func (c *Clamd) ScanStream(r io.Reader, abort chan bool) (chan *ScanResult, erro
 	return ch, nil
 }
 
-func NewClamd(address string) *Clamd {
+func NewClamd(address string) Scanner {
 	clamd := &Clamd{address: address}
 	return clamd
 }
