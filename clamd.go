@@ -40,6 +40,20 @@ const (
 	RES_PARSE_ERROR = "PARSE ERROR"
 )
 
+type Scanner interface {
+	Ping() error
+	Version() (chan *ScanResult, error)
+	Stats() (*Stats, error)
+	Reload() error
+	Shutdown() error
+	ScanFile(path string) (chan *ScanResult, error)
+	RawScanFile(path string) (chan *ScanResult, error)
+	MultiScanFile(path string) (chan *ScanResult, error)
+	ContScanFile(path string) (chan *ScanResult, error)
+	AllMatchScanFile(path string) (chan *ScanResult, error)
+	ScanStream(r io.Reader, abort chan bool) (chan *ScanResult, error)
+}
+
 type Clamd struct {
 	address string
 }
