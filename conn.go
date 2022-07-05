@@ -41,7 +41,7 @@ const CHUNK_SIZE = 1024
 const TCP_TIMEOUT = time.Second * 2
 
 var resultRegex = regexp.MustCompile(
-	`^(?P<path>[^:]+): ((?P<desc>[^:]+)(\((?P<virhash>([^:]+)):(?P<virsize>\d+)\))? )?(?P<status>FOUND|ERROR|OK)$`,
+	`^(?P<path>[^:]+): ((?P<desc>[^:]+)(\((?P<virhash>([^:]+)):(?P<virsize>\d+)\))? )?(?P<status>FOUND|ERROR|OK|Excluded)$`,
 )
 
 type CLAMDConn struct {
@@ -140,6 +140,7 @@ func parseResult(line string) *ScanResult {
 			switch matches[i] {
 			case RES_OK:
 			case RES_FOUND:
+			case RES_EXCLUDED:
 			case RES_ERROR:
 				break
 			default:

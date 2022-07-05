@@ -36,6 +36,7 @@ import (
 const (
 	RES_OK          = "OK"
 	RES_FOUND       = "FOUND"
+	RES_EXCLUDED    = "Excluded"
 	RES_ERROR       = "ERROR"
 	RES_PARSE_ERROR = "PARSE ERROR"
 )
