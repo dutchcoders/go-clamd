@@ -115,12 +115,17 @@ func (c *Clamd) Ping() error {
 
 	select {
 	case s := (<-ch):
-		switch s.Raw {
-		case "PONG":
-			return nil
-		default:
-			return errors.New(fmt.Sprintf("Invalid response, got %s.", s))
+		if s != nil {
+			switch s.Raw {
+			case "PONG":
+				return nil
+			default:
+				return errors.New(fmt.Sprintf("Invalid response, got %s.", s))
+			}
+		} else {
+			return errors.New(fmt.Sprintf("Invalid response, result is nil"))
 		}
+
 	}
 
 	return nil
