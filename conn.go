@@ -71,10 +71,7 @@ func (conn *CLAMDConn) sendChunk(data []byte) error {
 	a := buf
 
 	b := make([]byte, len(a))
-	for i := range a {
-		b[i] = a[i]
-	}
-
+	copy(b, a[:])
 	conn.Write(b)
 
 	_, err := conn.Write(data)

@@ -105,7 +105,7 @@ func (c *Clamd) simpleCommand(command string) (chan *ScanResult, error) {
 }
 
 /*
-Check the daemon's state (should reply with PONG).
+Ping Check the daemon's state (should reply with PONG).
 */
 func (c *Clamd) Ping() error {
 	ch, err := c.simpleCommand("PING")
@@ -113,26 +113,22 @@ func (c *Clamd) Ping() error {
 		return err
 	}
 
-	select {
-	case s := (<-ch):
-		if s != nil {
-			switch s.Raw {
-			case "PONG":
-				return nil
-			default:
-				return errors.New(fmt.Sprintf("Invalid response, got %s.", s))
-			}
-		} else {
-			return errors.New(fmt.Sprintf("Invalid response, result is nil"))
+	s := <-ch
+	if s != nil {
+		switch s.Raw {
+		case "PONG":
+			return nil
+		default:
+			return fmt.Errorf("invalid response, got %v", s)
 		}
-
+	} else {
+		return errors.New("invalid response, result is nil")
 	}
 
-	return nil
 }
 
 /*
-Print program and database versions.
+Version Print program and database versions.
 */
 func (c *Clamd) Version() (chan *ScanResult, error) {
 	dataArrays, err := c.simpleCommand("VERSION")
@@ -140,7 +136,7 @@ func (c *Clamd) Version() (chan *ScanResult, error) {
 }
 
 /*
-On this command clamd provides statistics about the scan queue, contents of scan
+Stats On this command clamd provides statistics about the scan queue, contents of scan
 queue, and memory usage. The exact reply format is subject to changes in future
 releases.
 */
@@ -163,9 +159,6 @@ func (c *Clamd) Stats() (*Stats, error) {
 			stats.Queue = s.Raw
 		} else if strings.HasPrefix(s.Raw, "MEMSTATS") {
 			stats.Memstats = s.Raw
-		} else if strings.HasPrefix(s.Raw, "END") {
-		} else {
-			//	return nil, errors.New(fmt.Sprintf("Unknown response, got %s.", s))
 		}
 	}
 
@@ -181,17 +174,14 @@ func (c *Clamd) Reload() error {
 		return err
 	}
 
-	select {
-	case s := (<-ch):
-		switch s.Raw {
-		case "RELOADING":
-			return nil
-		default:
-			return errors.New(fmt.Sprintf("Invalid response, got %s.", s))
-		}
+	s := <-ch
+	switch s.Raw {
+	case "RELOADING":
+		return nil
+	default:
+		return fmt.Errorf("invalid response, got %v", s)
 	}
 
-	return nil
 }
 
 func (c *Clamd) Shutdown() error {
@@ -204,7 +194,7 @@ func (c *Clamd) Shutdown() error {
 }
 
 /*
-Scan file or directory (recursively) with archive support enabled (a full path is
+ScanFile Scan file or directory (recursively) with archive support enabled (a full path is
 required).
 */
 func (c *Clamd) ScanFile(path string) (chan *ScanResult, error) {
@@ -214,7 +204,7 @@ func (c *Clamd) ScanFile(path string) (chan *ScanResult, error) {
 }
 
 /*
-Scan file or directory (recursively) with archive and special file support disabled
+RawScanFile Scan file or directory (recursively) with archive and special file support disabled
 (a full path is required).
 */
 func (c *Clamd) RawScanFile(path string) (chan *ScanResult, error) {
@@ -224,7 +214,7 @@ func (c *Clamd) RawScanFile(path string) (chan *ScanResult, error) {
 }
 
 /*
-Scan file in a standard way or scan directory (recursively) using multiple threads
+MultiScanFile Scan file in a standard way or scan directory (recursively) using multiple threads
 (to make the scanning faster on SMP machines).
 */
 func (c *Clamd) MultiScanFile(path string) (chan *ScanResult, error) {
@@ -234,7 +224,7 @@ func (c *Clamd) MultiScanFile(path string) (chan *ScanResult, error) {
 }
 
 /*
-Scan file or directory (recursively) with archive support enabled and don’t stop
+ContScanFile Scan file or directory (recursively) with archive support enabled and don’t stop
 the scanning when a virus is found.
 */
 func (c *Clamd) ContScanFile(path string) (chan *ScanResult, error) {
@@ -244,7 +234,7 @@ func (c *Clamd) ContScanFile(path string) (chan *ScanResult, error) {
 }
 
 /*
-Scan file or directory (recursively) with archive support enabled and don’t stop
+AllMatchScanFile Scan file or directory (recursively) with archive support enabled and don’t stop
 the scanning when a virus is found.
 */
 func (c *Clamd) AllMatchScanFile(path string) (chan *ScanResult, error) {
@@ -254,7 +244,7 @@ func (c *Clamd) AllMatchScanFile(path string) (chan *ScanResult, error) {
 }
 
 /*
-Scan a stream of data. The stream is sent to clamd in chunks, after INSTREAM,
+ScanStream Scan a stream of data. The stream is sent to clamd in chunks, after INSTREAM,
 on the same socket on which the command was sent. This avoids the overhead
 of establishing new TCP connections and problems with NAT. The format of the
 chunk is: <length><data> where <length> is the size of the following data in
@@ -300,7 +290,7 @@ func (c *Clamd) ScanStream(r io.Reader, abort chan bool) (chan *ScanResult, erro
 		return nil, err
 	}
 
-	ch, wg, err := conn.readResponse()
+	ch, wg, _ := conn.readResponse()
 
 	go func() {
 		wg.Wait()
