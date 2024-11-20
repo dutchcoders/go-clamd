@@ -41,7 +41,8 @@ const (
 )
 
 type Clamd struct {
-	address string
+	address   string
+	chunkSize int
 }
 
 type Stats struct {
@@ -258,7 +259,7 @@ the actual chunk. Streaming is terminated by sending a zero-length chunk. Note:
 do not exceed StreamMaxLength as defined in clamd.conf, otherwise clamd will
 reply with INSTREAM size limit exceeded and close the connection
 */
-func (c *Clamd) ScanStream(r io.Reader, abort chan bool) (chan *ScanResult, error) {
+func (c *Clamd) ScanStream(r io.Reader, abort <-chan struct{}) (chan *ScanResult, error) {
 	conn, err := c.newConnection()
 	if err != nil {
 		return nil, err
@@ -277,7 +278,7 @@ func (c *Clamd) ScanStream(r io.Reader, abort chan bool) (chan *ScanResult, erro
 	conn.sendCommand("INSTREAM")
 
 	for {
-		buf := make([]byte, CHUNK_SIZE)
+		buf := make([]byte, c.chunkSize)
 
 		nr, err := r.Read(buf)
 		if nr > 0 {
@@ -306,6 +307,6 @@ func (c *Clamd) ScanStream(r io.Reader, abort chan bool) (chan *ScanResult, erro
 }
 
 func NewClamd(address string) *Clamd {
-	clamd := &Clamd{address: address}
+	clamd := &Clamd{address: address, chunkSize: CHUNK_SIZE}
 	return clamd
 }
