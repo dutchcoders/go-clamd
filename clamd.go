@@ -91,17 +91,22 @@ func (c *Clamd) simpleCommand(command string) (chan *ScanResult, error) {
 
 	err = conn.sendCommand(command)
 	if err != nil {
+		conn.Close() // ← Close connection immediately
 		return nil, err
 	}
 
 	ch, wg, err := conn.readResponse()
+	if err != nil {
+		conn.Close() // ← Close connection immediately
+		return nil, err
+	}
 
 	go func() {
 		wg.Wait()
 		conn.Close()
 	}()
 
-	return ch, err
+	return ch, nil // ← Only return ch when it's valid
 }
 
 /*
@@ -110,11 +115,14 @@ Check the daemon's state (should reply with PONG).
 func (c *Clamd) Ping() error {
 	ch, err := c.simpleCommand("PING")
 	if err != nil {
-		return err
+		return err // ← Handle error before reading channel
 	}
 
 	select {
-	case s := (<-ch):
+	case s, ok := <-ch: // ← Check if channel is closed
+		if !ok {
+			return errors.New("channel closed unexpectedly")
+		}
 		switch s.Raw {
 		case "PONG":
 			return nil
